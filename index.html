@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeLab — Position & Risk Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="bg-canvas" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-mark">T</span><span class="logo-text">rade<em>Lab</em></span>
+    </div>
+    <div class="disclaimer-pill">Educational only &middot; Not financial advice &middot; Demo trade first</div>
+  </div>
+</header>
+
+<nav class="tab-nav" role="tablist">
+  <div class="tabs-inner">
+    <button class="tab-btn active" data-tab="calculator" role="tab">Position Size</button>
+    <button class="tab-btn" data-tab="risk" role="tab">Risk Mgmt</button>
+    <button class="tab-btn" data-tab="journal" role="tab">Trade Journal</button>
+    <div class="tab-slider" id="tab-slider"></div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════ TAB 1 ═══ -->
+<main id="tab-calculator" class="tab-content active">
+  <div class="page-hero">
+    <h1 class="hero-title">Position Size</h1>
+    <p class="hero-sub">Know your size before you enter the market.</p>
+  </div>
+
+  <div class="card" style="--i:0">
+    <div class="card-label">Account</div>
+    <div class="form-row">
+      <div class="field">
+        <label for="c-currency">Currency</label>
+        <select id="c-currency"><option>USD</option><option>EUR</option><option>GBP</option><option>MZN</option></select>
+      </div>
+      <div class="field">
+        <label for="c-balance">Account Balance</label>
+        <input type="number" id="c-balance" placeholder="10000" min="0" step="100">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="c-risk">Risk per Trade % <span class="hint">max 2.0%</span></label>
+        <input type="number" id="c-risk" value="0.5" min="0.01" max="2.0" step="0.1">
+        <span class="field-error" id="c-risk-err"></span>
+      </div>
+      <div class="field">
+        <label for="c-instrument">Instrument</label>
+        <select id="c-instrument">
+          <option value="gold">Gold CFD (XAUUSD)</option>
+          <option value="nq">Nasdaq Futures (NQ/MNQ)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="gold-settings" class="card instrument-card" style="--i:1">
+    <div class="card-label">Gold CFD Settings</div>
+    <div class="form-row">
+      <div class="field">
+        <label for="g-contract-size">Contract size / lot (oz) <span class="hint">default 100</span></label>
+        <input type="number" id="g-contract-size" value="100" min="1" step="1">
+      </div>
+      <div class="field">
+        <label for="g-lot-step">Min lot step <span class="hint">default 0.01</span></label>
+        <input type="number" id="g-lot-step" value="0.01" min="0.001" step="0.001">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="g-leverage">Leverage <span class="hint">e.g. 100 for 1:100</span></label>
+        <input type="number" id="g-leverage" value="100" min="1" max="2000" step="1" placeholder="100">
+      </div>
+      <div class="field leverage-note-field">
+        <div class="leverage-info">Margin = (Entry × Contract size × lots) ÷ Leverage</div>
+      </div>
+    </div>
+    <p class="formula-note">Value per $1 move = contract size &times; lots &mdash; derived automatically.</p>
+  </div>
+
+  <div id="nq-settings" class="card instrument-card hidden" style="--i:1">
+    <div class="card-label">NQ Futures Settings</div>
+    <div class="form-row">
+      <div class="field">
+        <label for="nq-type">Contract</label>
+        <select id="nq-type"><option value="nq">NQ (E-mini)</option><option value="mnq">MNQ (Micro)</option></select>
+      </div>
+      <div class="field">
+        <label for="nq-tick-size">Tick size (pts) <span class="hint">default 0.25</span></label>
+        <input type="number" id="nq-tick-size" value="0.25" min="0.01" step="0.01">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="nq-tick-value">Tick value ($) <span class="hint">check your broker</span></label>
+        <input type="number" id="nq-tick-value" value="5.00" min="0.01" step="0.01">
+      </div>
+      <div class="field">
+        <label for="nq-margin">Initial Margin / contract ($) <span class="hint">check your broker</span></label>
+        <input type="number" id="nq-margin" value="1000" min="1" step="1" placeholder="1000">
+      </div>
+    </div>
+    <div class="leverage-info">Futures use initial margin, not leverage. Margin shown is per contract. Check CME/broker for current rates.</div>
+  </div>
+
+  <div class="card" style="--i:2">
+    <div class="card-label">Trade Levels</div>
+    <div class="form-row">
+      <div class="field">
+        <label for="c-entry">Entry Price</label>
+        <input type="number" id="c-entry" placeholder="1950.00" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label for="c-stop">Stop Loss</label>
+        <input type="number" id="c-stop" placeholder="1940.00" min="0" step="0.01">
+        <span class="field-error" id="c-stop-err"></span>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="c-tp">Take Profit <span class="hint">optional</span></label>
+        <input type="number" id="c-tp" placeholder="1970.00" min="0" step="0.01">
+      </div>
+    </div>
+    <span class="field-error" id="c-global-err"></span>
+    <button class="btn-primary" id="c-calculate">
+      Calculate
+      <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div class="results-panel hidden" id="c-results">
+    <div class="results-eyebrow">Estimated Results <span class="est-tag">estimate only</span></div>
+    <div class="results-grid" id="c-results-grid"></div>
+    <details class="formula-panel">
+      <summary>How it&rsquo;s calculated</summary>
+      <div id="c-formula-text" class="formula-body"></div>
+    </details>
+  </div>
+</main>
+
+<!-- ═══════════════════════════════════════ TAB 2 ═══ -->
+<main id="tab-risk" class="tab-content hidden">
+  <div class="page-hero">
+    <h1 class="hero-title">Risk Management</h1>
+    <p class="hero-sub">Set your limits before the session starts.</p>
+  </div>
+
+  <div class="card" style="--i:0">
+    <div class="card-label">Parameters</div>
+    <div class="form-row">
+      <div class="field">
+        <label for="r-balance">Account Balance ($)</label>
+        <input type="number" id="r-balance" placeholder="10000" min="0" step="100">
+      </div>
+      <div class="field">
+        <label for="r-risk">Risk per Trade % <span class="hint">max 2.0%</span></label>
+        <input type="number" id="r-risk" value="0.5" min="0.01" max="2.0" step="0.1">
+        <span class="field-error" id="r-risk-err"></span>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="r-daily-loss">Max Daily Loss % <span class="hint">max 4.0%</span></label>
+        <input type="number" id="r-daily-loss" value="1.5" min="0.1" max="4.0" step="0.1">
+        <span class="field-error" id="r-daily-err"></span>
+      </div>
+      <div class="field">
+        <label for="r-trades">Trades per Day</label>
+        <input type="number" id="r-trades" value="3" min="1" max="10" step="1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="r-instrument">Instrument</label>
+        <select id="r-instrument">
+          <option value="gold">Gold CFD</option>
+          <option value="nq">NQ (E-mini)</option>
+          <option value="mnq">MNQ (Micro)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="r-stop-size" id="r-stop-label">Typical Stop ($)</label>
+        <input type="number" id="r-stop-size" placeholder="10" min="0.01" step="0.01">
+        <span class="hint" id="r-stop-hint">Gold: price distance in $</span>
+      </div>
+    </div>
+    <div class="form-row" id="r-leverage-row">
+      <div class="field">
+        <label for="r-leverage" id="r-leverage-label">Leverage <span class="hint">e.g. 100 for 1:100</span></label>
+        <input type="number" id="r-leverage" value="100" min="1" max="2000" step="1" placeholder="100">
+      </div>
+      <div class="field">
+        <label for="r-entry-price">Typical Entry Price <span class="hint">for margin calc</span></label>
+        <input type="number" id="r-entry-price" placeholder="1950.00" min="0" step="0.01">
+      </div>
+    </div>
+    <button class="btn-primary" id="r-calculate">
+      Generate Plan
+      <svg viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div class="results-panel hidden" id="r-results">
+    <div class="results-eyebrow">Risk Plan <span class="est-tag">estimate only</span></div>
+    <div class="results-grid" id="r-results-grid"></div>
+    <div class="red-flags hidden" id="r-flags"></div>
+    <div class="rules-box">
+      <div class="rules-label">Rules to follow</div>
+      <ul class="rules-list">
+        <li>Always place a stop-loss before entering a trade.</li>
+        <li>Do not increase size after a losing trade.</li>
+        <li>Stop trading when the daily loss limit is reached.</li>
+        <li>Trade on demo until results are consistent for 30+ days.</li>
+        <li>Record every trade and review weekly.</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<!-- ═══════════════════════════════════════ TAB 3 ═══ -->
+<main id="tab-journal" class="tab-content hidden">
+  <div class="page-hero">
+    <h1 class="hero-title">Trade Journal</h1>
+    <p class="hero-sub">Every trade recorded. Every lesson stored.</p>
+  </div>
+
+  <div class="card" style="--i:0">
+    <div class="card-label" id="journal-form-title">New Entry</div>
+    <div class="form-row">
+      <div class="field">
+        <label for="j-datetime">Date / Time</label>
+        <input type="datetime-local" id="j-datetime">
+      </div>
+      <div class="field">
+        <label for="j-instrument">Instrument</label>
+        <select id="j-instrument">
+          <option value="Gold CFD">Gold CFD</option>
+          <option value="NQ">NQ</option>
+          <option value="MNQ">MNQ</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="j-direction">Direction</label>
+        <select id="j-direction"><option>Long</option><option>Short</option></select>
+      </div>
+      <div class="field">
+        <label for="j-size">Size (lots/contracts)</label>
+        <input type="number" id="j-size" placeholder="0.10" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="j-entry">Entry</label>
+        <input type="number" id="j-entry" placeholder="1950.00" step="0.01">
+      </div>
+      <div class="field">
+        <label for="j-stop">Stop Loss</label>
+        <input type="number" id="j-stop" placeholder="1940.00" step="0.01">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="j-tp">Take Profit <span class="hint">optional</span></label>
+        <input type="number" id="j-tp" placeholder="1970.00" step="0.01">
+      </div>
+      <div class="field">
+        <label for="j-pl">P/L ($)</label>
+        <input type="number" id="j-pl" placeholder="+150.00" step="0.01">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="j-r">Result in R <span class="hint">+1.5 or -1</span></label>
+        <input type="number" id="j-r" placeholder="1.5" step="0.1">
+      </div>
+      <div class="field">
+        <label for="j-setup">Setup Tag</label>
+        <select id="j-setup">
+          <option>Breakout</option><option>Pullback</option><option>Reversal</option>
+          <option>Range</option><option>News</option><option>Other</option>
+          <option value="custom">Custom...</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row hidden" id="custom-setup-row">
+      <div class="field full-width">
+        <label for="j-setup-custom">Custom Setup</label>
+        <input type="text" id="j-setup-custom" placeholder="Name your setup">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field full-width">
+        <label for="j-screenshot">Screenshot URL <span class="hint">optional</span></label>
+        <input type="url" id="j-screenshot" placeholder="https://...">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field full-width">
+        <label for="j-notes">Notes</label>
+        <textarea id="j-notes" rows="3" placeholder="What happened? What did you learn?"></textarea>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="j-save">
+        Save Trade
+        <svg viewBox="0 0 16 16" fill="none"><path d="M13 4L6.5 11 3 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="btn-ghost hidden" id="j-cancel-edit">Cancel Edit</button>
+    </div>
+    <span class="field-error" id="j-err"></span>
+  </div>
+
+  <div class="card" id="j-stats-card" style="display:none; --i:1">
+    <div class="card-label">Performance Summary</div>
+    <div class="results-grid" id="j-stats-grid"></div>
+  </div>
+
+  <div class="card" style="--i:2">
+    <div class="card-label">Trade Log</div>
+    <div class="filter-row">
+      <input type="text" id="j-search" placeholder="Search...">
+      <select id="j-filter-instrument"><option value="">All</option><option value="Gold CFD">Gold CFD</option><option value="NQ">NQ</option><option value="MNQ">MNQ</option></select>
+      <select id="j-filter-direction"><option value="">Direction</option><option value="Long">Long</option><option value="Short">Short</option></select>
+      <select id="j-filter-result"><option value="">Result</option><option value="win">Win</option><option value="loss">Loss</option><option value="be">Break-even</option></select>
+      <input type="date" id="j-filter-from" title="From">
+      <input type="date" id="j-filter-to" title="To">
+      <button class="btn-ghost small" id="j-clear-filters">Clear</button>
+    </div>
+    <div class="table-wrap">
+      <table id="j-table">
+        <thead><tr>
+          <th>Date</th><th>Instr.</th><th>Dir.</th><th>Entry</th><th>Stop</th><th>Size</th><th>P/L $</th><th>R</th><th>Setup</th><th></th>
+        </tr></thead>
+        <tbody id="j-tbody"></tbody>
+      </table>
+      <p class="empty-msg" id="j-empty">No trades yet. Add your first entry above.</p>
+    </div>
+    <div class="export-row">
+      <button class="btn-ghost small" id="j-export">Export CSV</button>
+      <label class="btn-ghost small">Import CSV<input type="file" id="j-import" accept=".csv" style="display:none"></label>
+      <button class="btn-danger small" id="j-delete-all">Delete All</button>
+    </div>
+    <p class="import-msg hidden" id="j-import-msg"></p>
+  </div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay hidden" id="delete-modal">
+  <div class="modal">
+    <div class="modal-warn">!</div>
+    <div class="modal-title">Delete all trades?</div>
+    <p>This cannot be undone. All journal entries will be removed from your browser.</p>
+    <div class="modal-btns">
+      <button class="btn-ghost" id="modal-cancel">Cancel</button>
+      <button class="btn-danger" id="modal-confirm">Yes, delete all</button>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>TradeLab &mdash; Educational use only. All calculations are estimates. Verify figures with your broker before trading.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
